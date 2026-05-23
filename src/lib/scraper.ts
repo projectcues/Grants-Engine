@@ -16,10 +16,6 @@ export class GrantsScraper {
         formats: ['markdown']
       });
       
-      if (!response.success) {
-        throw new Error(response.error);
-      }
-      
       return response.markdown || '';
     } catch (e: any) {
       console.error(`Error scraping Grant URL: ${e}`);

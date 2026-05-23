@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { DashboardShell } from '@/components/layout/DashboardShell';
 import { FileText, Target, Award, Search, Sparkles } from 'lucide-react';
 
