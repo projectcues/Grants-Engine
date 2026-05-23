@@ -1,23 +1,101 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { DashboardShell } from '@/components/layout/DashboardShell';
 import { FileText, Target, Award, Search, Sparkles } from 'lucide-react';
+import { createClient } from '@/utils/supabase/client';
+
+interface ActiveProject {
+  id: string;
+  title: string;
+  agency: string;
+  deadline_date: string;
+  amount: number;
+}
 
 export default function Home() {
   const [url, setUrl] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [generatedSnippet, setGeneratedSnippet] = useState<string | null>(null);
+  
+  const [projects, setProjects] = useState<ActiveProject[]>([]);
+  const [proposalCount, setProposalCount] = useState<number>(0);
+  const supabase = createClient();
+
+  useEffect(() => {
+    async function fetchData() {
+      // Fetch real active projects
+      const { data: projectsData } = await supabase
+        .from('active_projects')
+        .select('*')
+        .eq('status', 'active')
+        .order('deadline_date', { ascending: true })
+        .limit(3);
+      
+      if (projectsData) {
+        setProjects(projectsData);
+      }
+
+      // Fetch user's actual generated documents count
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { count } = await supabase
+          .from('generated_documents')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', user.id);
+        setProposalCount(count || 0);
+      }
+    }
+    fetchData();
+  }, [supabase]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!url) return;
     
     setIsProcessing(true);
-    // TODO: Implement actual scraping & generation API call
-    setTimeout(() => {
+    setGeneratedSnippet(null);
+    
+    try {
+      const res = await fetch('/api/engine', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ grantUrl: url })
+      });
+      
+      const data = await res.json();
+      
+      if (data.success) {
+        setGeneratedSnippet(data.proposalSnippet);
+        // Also save to database locally for the user
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          await supabase.from('generated_documents').insert({
+            user_id: user.id,
+            source_url: url,
+            document_type: 'grant',
+            content: data.proposalSnippet // in reality we'd store the full proposal
+          });
+          setProposalCount(prev => prev + 1);
+        }
+      } else {
+        alert("Error: " + data.error);
+      }
+    } catch (err: any) {
+      alert("Failed to generate: " + err.message);
+    } finally {
       setIsProcessing(false);
       setUrl('');
-    }, 2000);
+    }
+  };
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(amount);
+  };
+
+  const calculateDaysLeft = (dateString: string) => {
+    const diff = new Date(dateString).getTime() - new Date().getTime();
+    return Math.max(0, Math.ceil(diff / (1000 * 3600 * 24)));
   };
 
   return (
@@ -68,13 +146,24 @@ export default function Home() {
                   )}
                 </button>
               </form>
+
+              {generatedSnippet && (
+                <div className="mt-8 p-6 bg-slate-950 border border-emerald-500/30 rounded-lg">
+                  <h3 className="text-emerald-400 font-medium mb-2 flex items-center gap-2">
+                    <Sparkles className="w-4 h-4" /> 
+                    Generation Complete
+                  </h3>
+                  <p className="text-slate-300 text-sm leading-relaxed whitespace-pre-wrap">{generatedSnippet}</p>
+                </div>
+              )}
             </div>
           </div>
 
           {/* Quick Stats Grid */}
           <div className="grid grid-cols-2 gap-6">
-            <StatCard icon={<FileText />} label="Active Proposals" value="12" />
-            <StatCard icon={<Award />} label="Funds Secured" value="$4.2M" />
+            <StatCard icon={<FileText />} label="Your Proposals" value={proposalCount.toString()} />
+            {/* Compute dynamic total from DB projects for demo purposes, or keep standard value */}
+            <StatCard icon={<Award />} label="Eligible Funds" value={formatCurrency(projects.reduce((acc, curr) => acc + curr.amount, 0))} />
           </div>
         </div>
 
@@ -87,24 +176,19 @@ export default function Home() {
             </div>
             
             <div className="space-y-4">
-              <DeadlineItem 
-                title="NSF AI Research Grant" 
-                agency="National Science Foundation"
-                daysLeft={5}
-                amount="$500,000"
-              />
-              <DeadlineItem 
-                title="Community Tech Fund" 
-                agency="Project Cues Foundation"
-                daysLeft={12}
-                amount="$150,000"
-              />
-              <DeadlineItem 
-                title="DoE Clean Energy Innovator" 
-                agency="Dept. of Energy"
-                daysLeft={28}
-                amount="$1.2M"
-              />
+              {projects.length > 0 ? (
+                projects.map((p) => (
+                  <DeadlineItem 
+                    key={p.id}
+                    title={p.title} 
+                    agency={p.agency}
+                    daysLeft={calculateDaysLeft(p.deadline_date)}
+                    amount={formatCurrency(p.amount)}
+                  />
+                ))
+              ) : (
+                <p className="text-slate-500 text-sm">No active projects found.</p>
+              )}
             </div>
           </div>
         </div>
