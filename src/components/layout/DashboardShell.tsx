@@ -17,11 +17,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
       <aside className="w-64 border-r border-slate-700/50 bg-slate-900/50 backdrop-blur-xl flex flex-col z-10">
         <div className="h-20 flex items-center px-8 border-b border-slate-700/50 gap-3">
           <div className="relative flex items-center justify-center">
-            {/* Replace with Grants Logo when available */}
-            <div className="text-xl font-bold text-white tracking-widest flex items-center gap-2">
-               <Shield className="w-6 h-6 text-emerald-400" />
-               CUES <span className="text-emerald-400 font-light">GRANTS</span>
-            </div>
+            <Image src="/logo.png" alt="Project Cues Grants" width={180} height={52} className="object-contain" priority />
           </div>
         </div>
         
