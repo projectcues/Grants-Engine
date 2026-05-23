@@ -1,4 +1,5 @@
 import { login, signup } from './actions'
+import Image from 'next/image'
 
 export default function LoginPage({ searchParams }: { searchParams: { error?: string } }) {
   return (
@@ -10,9 +11,9 @@ export default function LoginPage({ searchParams }: { searchParams: { error?: st
       }} />
 
       <div className="z-10 w-full max-w-md p-8 bg-slate-900/80 backdrop-blur-xl border border-slate-700/50 rounded-2xl shadow-2xl">
-        <div className="mb-8 text-center">
-          <h1 className="text-3xl font-light text-white tracking-widest mb-2">CUES GRANTS</h1>
-          <p className="text-slate-400">Sign in to your account</p>
+        <div className="mb-8 text-center flex flex-col items-center">
+          <Image src="/logo.png" alt="Project Cues Logo" width={180} height={60} className="mb-4" />
+          <h1 className="text-xl font-light text-slate-300 tracking-[0.3em] uppercase">Grants</h1>
         </div>
 
         {searchParams?.error && (
