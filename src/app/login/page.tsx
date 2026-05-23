@@ -1,7 +1,9 @@
 import { login, signup } from './actions'
 import Image from 'next/image'
 
-export default function LoginPage({ searchParams }: { searchParams: { error?: string } }) {
+export default async function LoginPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
+  const params = await searchParams;
+  
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#0A0D14] text-slate-200">
       
@@ -16,9 +18,9 @@ export default function LoginPage({ searchParams }: { searchParams: { error?: st
           <h1 className="text-xl font-light text-slate-300 tracking-[0.3em] uppercase">Grants</h1>
         </div>
 
-        {searchParams?.error && (
+        {params?.error && (
           <div className="mb-6 p-4 bg-red-500/10 border border-red-500/50 text-red-400 rounded-lg text-sm text-center">
-            {searchParams.error}
+            {params.error}
           </div>
         )}
 
