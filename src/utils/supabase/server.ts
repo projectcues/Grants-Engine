@@ -5,8 +5,8 @@ export async function createClient() {
   const cookieStore = await cookies();
 
   return createServerClient(
-    process.env.SUPABASE_URL || 'https://fallback.supabase.co',
-    process.env.SUPABASE_SERVICE_KEY || 'fallback-service-key', // Using service key for DB operations since anon key isn't provided yet
+    process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://fallback.supabase.co',
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'fallback-anon-key',
     {
       cookies: {
         getAll() {
