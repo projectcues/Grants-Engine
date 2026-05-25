@@ -1,6 +1,5 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
-import { fetch as undiciFetch } from 'undici';
 
 export async function updateSession(request: NextRequest) {
   console.log('updateSession middleware started for path:', request.nextUrl.pathname, 'Method:', request.method);
@@ -35,9 +34,12 @@ export async function updateSession(request: NextRequest) {
           fetch: async (url, options) => {
             console.log(`[Supabase Middleware Fetch] URL: ${url}`);
             try {
-              const res = await undiciFetch(url as any, options as any);
+              const res = await fetch(url, {
+                ...options,
+                cache: 'no-store',
+              });
               console.log(`[Supabase Middleware Fetch] Response: ${res.status} ${res.statusText}`);
-              return res as any;
+              return res;
             } catch (err) {
               console.error('[Supabase Middleware Fetch] ERROR:', err);
               throw err;

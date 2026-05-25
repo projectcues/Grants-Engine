@@ -1,6 +1,5 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-import { fetch as undiciFetch } from 'undici';
 
 export async function createClient() {
   const cookieStore = await cookies();
@@ -30,9 +29,12 @@ export async function createClient() {
         fetch: async (url, options) => {
           console.log(`[Supabase Server Fetch] URL: ${url}`);
           try {
-            const res = await undiciFetch(url as any, options as any);
+            const res = await fetch(url, {
+              ...options,
+              cache: 'no-store',
+            });
             console.log(`[Supabase Server Fetch] Response: ${res.status} ${res.statusText}`);
-            return res as any;
+            return res;
           } catch (err) {
             console.error('[Supabase Server Fetch] ERROR:', err);
             throw err;
