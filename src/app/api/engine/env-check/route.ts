@@ -6,8 +6,26 @@ export async function GET(request: NextRequest) {
     headersObj[key] = value;
   });
 
+  let rawFetchResult = null;
+  try {
+    const res = await fetch('https://dbzbsqreymotzovhgodv.supabase.co/auth/v1/health', {
+      headers: {
+        'apikey': 'sb_publishable_6uqdCowX0KaUFIczVnP-2A_06caOPEM'
+      }
+    });
+    rawFetchResult = {
+      status: res.status,
+      statusText: res.statusText,
+      ok: res.ok,
+      body: await res.text()
+    };
+  } catch (err: any) {
+    rawFetchResult = { error: err.message, stack: err.stack };
+  }
+
   return NextResponse.json({
     headers: headersObj,
+    rawFetchResult,
     NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL || 'not set',
     NEXT_PUBLIC_SUPABASE_ANON_KEY_EXISTS: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     SUPABASE_URL: process.env.SUPABASE_URL || 'not set',
