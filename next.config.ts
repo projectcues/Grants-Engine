@@ -5,7 +5,7 @@ const nextConfig: NextConfig = {
   serverExternalPackages: [],
   experimental: {
     serverActions: {
-      allowedOrigins: ["*.projectcues.com", "localhost:3000"]
+      allowedOrigins: ["grants.projectcues.com", "localhost:3011", "localhost:3000"]
     }
   }
 };
