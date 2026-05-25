@@ -6,7 +6,7 @@ export async function updateSession(request: NextRequest) {
   console.log('updateSession middleware started for path:', request.nextUrl.pathname, 'Method:', request.method);
   if (request.method === 'POST') {
     console.log('Skipping session check for POST request to prevent body stream closure');
-    return;
+    return NextResponse.next();
   }
 
   try {
