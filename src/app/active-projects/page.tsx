@@ -3,7 +3,7 @@ import { createClient } from '@/utils/supabase/server';
 
 export default async function ActiveProjectsPage() {
   const supabase = await createClient();
-  const { data: projects } = await supabase.from('active_projects').select('*');
+  const { data: projects } = await supabase.from('active_projects').select('*').eq('project_type', 'grant');
 
   return (
     <DashboardShell>

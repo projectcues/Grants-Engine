@@ -29,6 +29,7 @@ export default function Home() {
         .from('active_projects')
         .select('*')
         .eq('status', 'active')
+        .eq('project_type', 'grant')
         .order('deadline_date', { ascending: true })
         .limit(3);
       
