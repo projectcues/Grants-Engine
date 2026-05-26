@@ -1,4 +1,3 @@
-import { login, signup } from './actions'
 import Image from 'next/image'
 
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
@@ -51,13 +50,15 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
 
           <div className="mt-4 flex flex-col gap-3">
             <button 
-              formAction={login} 
+              formAction="/api/auth/login" 
+              formMethod="post"
               className="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-semibold py-3 px-4 rounded-lg transition-colors"
             >
               Sign In
             </button>
             <button 
-              formAction={signup} 
+              formAction="/api/auth/signup" 
+              formMethod="post"
               className="w-full bg-transparent border border-slate-700 hover:border-slate-500 text-slate-300 font-medium py-3 px-4 rounded-lg transition-colors"
             >
               Create Account
