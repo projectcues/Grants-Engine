@@ -5,7 +5,8 @@ export async function POST(request: Request) {
   console.log('[POST /api/auth/signup] Request received');
   
   // Resolve base URL taking reverse proxies into account
-  const forwardedHost = request.headers.get('x-forwarded-host') || request.headers.get('host') || 'grants.projectcues.com';
+  const rawHost = request.headers.get('x-forwarded-host') || request.headers.get('host') || 'grants.projectcues.com';
+  const forwardedHost = rawHost.split(',')[0].trim();
   const protoHeader = request.headers.get('x-forwarded-proto') || '';
   const forwardedProto = protoHeader.split(',')[0].trim() || 'https';
   const baseUrl = `${forwardedProto}://${forwardedHost}`;
