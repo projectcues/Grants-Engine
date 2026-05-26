@@ -9,6 +9,8 @@ import Link from 'next/link';
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [activeOrg, setActiveOrg] = useState<string>('Project Cues, Inc.');
+  const [loadingOrg, setLoadingOrg] = useState<boolean>(true);
   const router = useRouter();
   const pathname = usePathname();
   const supabase = createClient();
@@ -18,14 +20,51 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         setUserEmail(user.email ?? null);
+        const { data: profile } = await supabase
+          .from('user_profiles')
+          .select('organization_name')
+          .eq('id', user.id)
+          .single();
+        if (profile?.organization_name) {
+          setActiveOrg(profile.organization_name);
+        }
       }
+      setLoadingOrg(false);
     };
     fetchUser();
-  }, [supabase.auth]);
+  }, [supabase]);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     router.push('/login');
+  };
+
+  const handleCompanyChange = async (orgName: string) => {
+    setActiveOrg(orgName);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      let uei = '';
+      let cage = '';
+      if (orgName === 'Project Cues, Inc.') {
+        uei = 'LPSKXU1KEJY8';
+        cage = '9YWL9';
+      } else if (orgName === 'Promo Cues, Inc.') {
+        uei = 'Q3WGGCAYJN28';
+        cage = '9Y6D5';
+      } else if (orgName === 'Package Cues, Inc.') {
+        uei = 'HM4PZ75ZYPL2';
+        cage = '9YRZ2';
+      }
+      await supabase.from('user_profiles').upsert({
+        id: user.id,
+        organization_name: orgName,
+        uei,
+        cage_code: cage,
+        role: 'Admin',
+        full_name: 'Lloyd Pearson'
+      });
+      window.location.reload();
+    }
   };
 
   return (
@@ -61,7 +100,23 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         
         {/* Top Header */}
         <header className="h-20 px-8 flex items-center justify-between border-b border-slate-700/50 bg-slate-900/50 backdrop-blur-xl sticky top-0 z-20">
-          <h1 className="text-2xl font-light tracking-wide text-white">GRANTS DASHBOARD</h1>
+          <div className="flex items-center gap-4">
+            <h1 className="text-2xl font-light tracking-wide text-white">GRANTS DASHBOARD</h1>
+            {!loadingOrg && (
+              <>
+                <div className="h-6 w-px bg-slate-700/60" />
+                <select
+                  value={activeOrg}
+                  onChange={(e) => handleCompanyChange(e.target.value)}
+                  className="bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-sm text-emerald-400 font-medium focus:outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer"
+                >
+                  <option value="Project Cues, Inc.">Project Cues, Inc.</option>
+                  <option value="Promo Cues, Inc.">Promo Cues, Inc.</option>
+                  <option value="Package Cues, Inc.">Package Cues, Inc.</option>
+                </select>
+              </>
+            )}
+          </div>
           <div className="flex items-center gap-4 text-sm text-slate-400">
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />

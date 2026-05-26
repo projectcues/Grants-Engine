@@ -21,6 +21,7 @@ export default function Home() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [generatedSnippet, setGeneratedSnippet] = useState<string | null>(null);
   const [selectedProject, setSelectedProject] = useState<ActiveProject | null>(null);
+  const [activeOrg, setActiveOrg] = useState<string>('Project Cues, Inc.');
   
   const [projects, setProjects] = useState<ActiveProject[]>([]);
   const [proposalCount, setProposalCount] = useState<number>(0);
@@ -51,9 +52,18 @@ export default function Home() {
         setProjects(projectsData);
       }
 
-      // Fetch user's actual generated documents count
+      // Fetch user's active company profile and generated count
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
+        const { data: profile } = await supabase
+          .from('user_profiles')
+          .select('organization_name')
+          .eq('id', user.id)
+          .single();
+        if (profile?.organization_name) {
+          setActiveOrg(profile.organization_name);
+        }
+
         const { count } = await supabase
           .from('generated_documents')
           .select('*', { count: 'exact', head: true })
@@ -104,13 +114,51 @@ export default function Home() {
     }
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(amount);
+  const formatCurrency = (amount: any) => {
+    const val = typeof amount === 'number' ? amount : Number(amount || 0);
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(val);
   };
 
   const calculateDaysLeft = (dateString: string) => {
     const diff = new Date(dateString).getTime() - new Date().getTime();
     return Math.max(0, Math.ceil(diff / (1000 * 3600 * 24)));
+  };
+
+  const getWinnabilityScore = (org: string, title: string, desc: string = '') => {
+    const text = (title + ' ' + desc).toLowerCase();
+    if (org.includes('Project Cues')) {
+      if (text.includes('clinical trial') || text.includes('research training') || text.includes('saipan shower') || text.includes('insurance') || text.includes('janitorial') || text.includes('propulsion motor') || text.includes('valve') || text.includes('hose') || text.includes('tubing')) {
+        if (text.includes('data coordinating') || text.includes('ctsa') || text.includes('integrative interventions') || text.includes('mhealth') || text.includes('remotely')) {
+          return { score: 92, level: 'High', reason: 'Opportunity requires custom software platforms, remote mHealth channels, database management, or clinical data coordinating hubs. Aligns with Project Cues\' Next.js, Supabase, TypeScript, and AI systems capabilities.' };
+        }
+        return { score: 45, level: 'Low', reason: 'Focus is clinical, operational, or mechanical, which is outside Project Cues\' core software and AI specialties.' };
+      }
+      if (text.includes('communicati') || text.includes('circuit card') || text.includes('adapter')) {
+        return { score: 75, level: 'Medium', reason: 'Involves technical communications, firmware, or adapters. Aligns with Project Cues\' systems integrations experience.' };
+      }
+      return { score: 60, level: 'Medium', reason: 'General opportunity. Project Cues can develop custom software portals or support platforms to manage this.' };
+    } 
+    
+    if (org.includes('Promo Cues')) {
+      if (text.includes('advertising') || text.includes('dissemination') || text.includes('implementation research') || text.includes('youth enjoy science') || text.includes('communication') || text.includes('education')) {
+        return { score: 91, level: 'High', reason: 'Focuses on public outreach, program recruitment, science communication, or campaign dissemination. Aligns with Promo Cues\' whitelabeled VBOUT marketing automation reseller license.' };
+      }
+      if (text.includes('clinical trial') || text.includes('saipan shower') || text.includes('janitorial') || text.includes('valve') || text.includes('propulsion motor') || text.includes('hose')) {
+        return { score: 35, level: 'Low', reason: 'Focus is strictly clinical or heavy industrial, which is outside Promo Cues\' digital marketing and advertising capabilities.' };
+      }
+      return { score: 58, level: 'Medium', reason: 'General outreach opportunity. Promo Cues can support targeted email marketing campaigns and branding.' };
+    }
+    
+    if (org.includes('Package Cues')) {
+      if (text.includes('drew') || text.includes('peralta') || text.includes('cargo') || text.includes('logistics') || text.includes('supply') || text.includes('dumpster') || text.includes('disposal') || text.includes('valve') || text.includes('hose') || text.includes('tubing') || text.includes('gland') || text.includes('adapter') || text.includes('propulsion motor')) {
+        return { score: 88, level: 'High', reason: 'Focuses on supply chains, logistics, parts supply, cargo transport, or disposal scheduling. Aligns with Package Cues\' logistics tracking platforms and inventory databases.' };
+      }
+      if (text.includes('clinical trial') || text.includes('predoctoral') || text.includes('fellow') || text.includes('physician scientist')) {
+        return { score: 30, level: 'Low', reason: 'Focus is clinical research training, unrelated to Package Cues\' logistics and transportation specialties.' };
+      }
+      return { score: 62, level: 'Medium', reason: 'Operational logistics opportunity. Package Cues can coordinate transport routing and delivery verifications.' };
+    }
+    return { score: 50, level: 'Medium', reason: 'General opportunity. Review requirements for company-specific alignment.' };
   };
 
   return (
@@ -177,7 +225,6 @@ export default function Home() {
           {/* Quick Stats Grid */}
           <div className="grid grid-cols-2 gap-6">
             <StatCard icon={<FileText />} label="Your Proposals" value={proposalCount.toString()} />
-            {/* Compute dynamic total from DB projects for demo purposes, or keep standard value */}
             <StatCard icon={<Award />} label="Eligible Funds" value={formatCurrency(projects.reduce((acc, curr) => acc + (curr.amount || 0), 0))} />
           </div>
         </div>
@@ -199,6 +246,7 @@ export default function Home() {
                     agency={p.agency}
                     daysLeft={calculateDaysLeft(p.deadline_date)}
                     amount={formatCurrency(p.amount)}
+                    match={getWinnabilityScore(activeOrg, p.title, p.description)}
                     onClick={() => setSelectedProject(p)}
                   />
                 ))
@@ -242,6 +290,23 @@ export default function Home() {
                     {new Date(selectedProject.deadline_date).toLocaleDateString()}
                   </span>
                 </div>
+              </div>
+
+              {/* Winnability Match Rating */}
+              <div className="p-4 bg-slate-950 border border-slate-800 rounded-lg">
+                <span className="block text-xs text-slate-500 uppercase tracking-wider mb-2">Winnability Fit ({activeOrg})</span>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
+                    getWinnabilityScore(activeOrg, selectedProject.title, selectedProject.description).level === 'High' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
+                    getWinnabilityScore(activeOrg, selectedProject.title, selectedProject.description).level === 'Medium' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' :
+                    'bg-slate-500/10 text-slate-400 border border-slate-500/20'
+                  }`}>
+                    {getWinnabilityScore(activeOrg, selectedProject.title, selectedProject.description).score}% {getWinnabilityScore(activeOrg, selectedProject.title, selectedProject.description).level} Match
+                  </span>
+                </div>
+                <p className="text-sm text-slate-300 leading-relaxed">
+                  {getWinnabilityScore(activeOrg, selectedProject.title, selectedProject.description).reason}
+                </p>
               </div>
 
               {selectedProject.url && (
@@ -301,15 +366,15 @@ function StatCard({ icon, label, value }: { icon: React.ReactNode, label: string
   );
 }
 
-function DeadlineItem({ title, agency, daysLeft, amount, onClick }: { title: string, agency: string, daysLeft: number, amount: string, onClick?: () => void }) {
+function DeadlineItem({ title, agency, daysLeft, amount, match, onClick }: { title: string, agency: string, daysLeft: number, amount: string, match?: { score: number, level: string }, onClick?: () => void }) {
   return (
     <div onClick={onClick} className="p-4 rounded-lg bg-slate-950 border border-slate-800 hover:border-slate-700 transition-colors cursor-pointer group">
       <div className="flex justify-between items-start mb-2">
         <div>
           <h4 className="text-slate-200 font-medium group-hover:text-emerald-400 transition-colors">{title}</h4>
-          <p className="text-xs text-slate-500">{agency}</p>
+          <p className="text-xs text-slate-500 mt-0.5">{agency}</p>
         </div>
-        <div className="text-right">
+        <div className="text-right shrink-0">
           <span className={`text-xs font-medium px-2 py-1 rounded-full ${
             daysLeft <= 7 ? 'bg-red-500/10 text-red-400 border border-red-500/20' : 
             'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
@@ -318,9 +383,20 @@ function DeadlineItem({ title, agency, daysLeft, amount, onClick }: { title: str
           </span>
         </div>
       </div>
-      <div className="flex items-center gap-2 text-sm text-slate-400 mt-3">
-        <Award className="w-4 h-4" />
-        <span>{amount}</span>
+      <div className="flex items-center justify-between text-sm mt-3 border-t border-slate-900 pt-2">
+        <div className="flex items-center gap-2 text-slate-400">
+          <Award className="w-4 h-4" />
+          <span>{amount}</span>
+        </div>
+        {match && (
+          <span className={`text-xs font-medium px-2 py-0.5 rounded ${
+            match.level === 'High' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
+            match.level === 'Medium' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' :
+            'bg-slate-500/10 text-slate-400 border border-slate-500/20'
+          }`}>
+            Match: {match.score}% ({match.level})
+          </span>
+        )}
       </div>
     </div>
   );

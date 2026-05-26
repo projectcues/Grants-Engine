@@ -23,9 +23,22 @@ export default function ActiveProjectsPage() {
   const [projects, setProjects] = useState<ActiveProject[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedProject, setSelectedProject] = useState<ActiveProject | null>(null);
+  const [activeOrg, setActiveOrg] = useState<string>('Project Cues, Inc.');
 
   useEffect(() => {
     async function loadProjects() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase
+          .from('user_profiles')
+          .select('organization_name')
+          .eq('id', user.id)
+          .single();
+        if (profile?.organization_name) {
+          setActiveOrg(profile.organization_name);
+        }
+      }
+
       const { data } = await supabase
         .from('active_projects')
         .select('*')
@@ -44,6 +57,43 @@ export default function ActiveProjectsPage() {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(val);
   };
 
+  const getWinnabilityScore = (org: string, title: string, desc: string = '') => {
+    const text = (title + ' ' + desc).toLowerCase();
+    if (org.includes('Project Cues')) {
+      if (text.includes('clinical trial') || text.includes('research training') || text.includes('saipan shower') || text.includes('insurance') || text.includes('janitorial') || text.includes('propulsion motor') || text.includes('valve') || text.includes('hose') || text.includes('tubing')) {
+        if (text.includes('data coordinating') || text.includes('ctsa') || text.includes('integrative interventions') || text.includes('mhealth') || text.includes('remotely')) {
+          return { score: 92, level: 'High', reason: 'Opportunity requires custom software platforms, remote mHealth channels, database management, or clinical data coordinating hubs. Aligns with Project Cues\' Next.js, Supabase, TypeScript, and AI systems capabilities.' };
+        }
+        return { score: 45, level: 'Low', reason: 'Focus is clinical, operational, or mechanical, which is outside Project Cues\' core software and AI specialties.' };
+      }
+      if (text.includes('communicati') || text.includes('circuit card') || text.includes('adapter')) {
+        return { score: 75, level: 'Medium', reason: 'Involves technical communications, firmware, or adapters. Aligns with Project Cues\' systems integrations experience.' };
+      }
+      return { score: 60, level: 'Medium', reason: 'General opportunity. Project Cues can develop custom software portals or support platforms to manage this.' };
+    } 
+    
+    if (org.includes('Promo Cues')) {
+      if (text.includes('advertising') || text.includes('dissemination') || text.includes('implementation research') || text.includes('youth enjoy science') || text.includes('communication') || text.includes('education')) {
+        return { score: 91, level: 'High', reason: 'Focuses on public outreach, program recruitment, science communication, or campaign dissemination. Aligns with Promo Cues\' whitelabeled VBOUT marketing automation reseller license.' };
+      }
+      if (text.includes('clinical trial') || text.includes('saipan shower') || text.includes('janitorial') || text.includes('valve') || text.includes('propulsion motor') || text.includes('hose')) {
+        return { score: 35, level: 'Low', reason: 'Focus is strictly clinical or heavy industrial, which is outside Promo Cues\' digital marketing and advertising capabilities.' };
+      }
+      return { score: 58, level: 'Medium', reason: 'General outreach opportunity. Promo Cues can support targeted email marketing campaigns and branding.' };
+    }
+    
+    if (org.includes('Package Cues')) {
+      if (text.includes('drew') || text.includes('peralta') || text.includes('cargo') || text.includes('logistics') || text.includes('supply') || text.includes('dumpster') || text.includes('disposal') || text.includes('valve') || text.includes('hose') || text.includes('tubing') || text.includes('gland') || text.includes('adapter') || text.includes('propulsion motor')) {
+        return { score: 88, level: 'High', reason: 'Focuses on supply chains, logistics, parts supply, cargo transport, or disposal scheduling. Aligns with Package Cues\' logistics tracking platforms and inventory databases.' };
+      }
+      if (text.includes('clinical trial') || text.includes('predoctoral') || text.includes('fellow') || text.includes('physician scientist')) {
+        return { score: 30, level: 'Low', reason: 'Focus is clinical research training, unrelated to Package Cues\' logistics and transportation specialties.' };
+      }
+      return { score: 62, level: 'Medium', reason: 'Operational logistics opportunity. Package Cues can coordinate transport routing and delivery verifications.' };
+    }
+    return { score: 50, level: 'Medium', reason: 'General opportunity. Review requirements for company-specific alignment.' };
+  };
+
   if (loading) {
     return (
       <DashboardShell>
@@ -57,36 +107,56 @@ export default function ActiveProjectsPage() {
   return (
     <DashboardShell>
       <div className="bg-slate-900/50 backdrop-blur-md border border-slate-800 rounded-xl p-8">
-        <h2 className="text-2xl font-light text-white mb-2">Active Grants</h2>
-        <p className="text-slate-400 mb-8">Browse current open grant solicitations. Click any opportunity to see details and apply.</p>
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6 gap-4">
+          <div>
+            <h2 className="text-2xl font-light text-white mb-2">Active Grants</h2>
+            <p className="text-slate-400">Browse current open grant solicitations. Click any opportunity to see details and apply.</p>
+          </div>
+          <div className="bg-slate-950 border border-slate-800 px-4 py-2 rounded-lg text-sm flex items-center gap-2 max-w-max">
+            <span className="text-slate-500">Matching for:</span>
+            <span className="text-emerald-400 font-semibold">{activeOrg}</span>
+          </div>
+        </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {projects && projects.length > 0 ? (
-            projects.map(p => (
-              <div 
-                key={p.id} 
-                onClick={() => setSelectedProject(p)}
-                className="p-6 bg-slate-950/60 border border-slate-800 rounded-lg hover:border-slate-700 transition-all cursor-pointer group flex flex-col justify-between"
-              >
-                <div>
-                  <h3 className="text-lg font-medium text-slate-200 group-hover:text-emerald-400 transition-colors mb-2 line-clamp-2">
-                    {p.title}
-                  </h3>
-                  <p className="text-sm text-slate-400 mb-4">{p.agency}</p>
-                </div>
-                
-                <div className="border-t border-slate-900 pt-4 flex items-center justify-between text-xs text-slate-500">
-                  <div className="flex items-center gap-1.5">
-                    <Calendar className="w-4 h-4 text-slate-600" />
-                    <span>Deadline: {new Date(p.deadline_date).toLocaleDateString()}</span>
+            projects.map(p => {
+              const match = getWinnabilityScore(activeOrg, p.title, p.description);
+              return (
+                <div 
+                  key={p.id} 
+                  onClick={() => setSelectedProject(p)}
+                  className="p-6 bg-slate-950/60 border border-slate-800 rounded-lg hover:border-slate-700 transition-all cursor-pointer group flex flex-col justify-between"
+                >
+                  <div>
+                    <div className="flex items-start justify-between gap-4 mb-2">
+                      <h3 className="text-lg font-medium text-slate-200 group-hover:text-emerald-400 transition-colors line-clamp-2">
+                        {p.title}
+                      </h3>
+                      <span className={`text-xs font-semibold px-2 py-0.5 rounded shrink-0 ${
+                        match.level === 'High' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
+                        match.level === 'Medium' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' :
+                        'bg-slate-500/10 text-slate-400 border border-slate-500/20'
+                      }`}>
+                        {match.score}% Match
+                      </span>
+                    </div>
+                    <p className="text-sm text-slate-400 mb-4">{p.agency}</p>
                   </div>
-                  <div className="flex items-center gap-1.5 text-emerald-400 font-semibold bg-emerald-500/10 px-2.5 py-1 rounded-full">
-                    <Award className="w-3.5 h-3.5" />
-                    <span>{formatCurrency(p.amount)}</span>
+                  
+                  <div className="border-t border-slate-900 pt-4 flex items-center justify-between text-xs text-slate-500">
+                    <div className="flex items-center gap-1.5">
+                      <Calendar className="w-4 h-4 text-slate-600" />
+                      <span>Deadline: {new Date(p.deadline_date).toLocaleDateString()}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-emerald-400 font-semibold bg-emerald-500/10 px-2.5 py-1 rounded-full">
+                      <Award className="w-3.5 h-3.5" />
+                      <span>{formatCurrency(p.amount)}</span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))
+              );
+            })
           ) : (
             <p className="text-slate-500 col-span-2">No active projects found.</p>
           )}
@@ -125,6 +195,23 @@ export default function ActiveProjectsPage() {
                     {new Date(selectedProject.deadline_date).toLocaleDateString()}
                   </span>
                 </div>
+              </div>
+
+              {/* Winnability Match Rating */}
+              <div className="p-4 bg-slate-950 border border-slate-800 rounded-lg">
+                <span className="block text-xs text-slate-500 uppercase tracking-wider mb-2">Winnability Fit ({activeOrg})</span>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
+                    getWinnabilityScore(activeOrg, selectedProject.title, selectedProject.description).level === 'High' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
+                    getWinnabilityScore(activeOrg, selectedProject.title, selectedProject.description).level === 'Medium' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' :
+                    'bg-slate-500/10 text-slate-400 border border-slate-500/20'
+                  }`}>
+                    {getWinnabilityScore(activeOrg, selectedProject.title, selectedProject.description).score}% {getWinnabilityScore(activeOrg, selectedProject.title, selectedProject.description).level} Match
+                  </span>
+                </div>
+                <p className="text-sm text-slate-300 leading-relaxed">
+                  {getWinnabilityScore(activeOrg, selectedProject.title, selectedProject.description).reason}
+                </p>
               </div>
 
               {selectedProject.url && (
