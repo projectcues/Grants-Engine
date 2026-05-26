@@ -21,6 +21,8 @@ export async function POST(req: Request) {
     let companyName = 'Project Cues, Inc.';
     let uei = '';
     let cageCode = '';
+    let companyDomain = 'projectcues.com';
+    let contactEmail = 'lloydpearson@projectcues.com';
     
     if (user) {
       const { data: profile } = await supabase
@@ -32,6 +34,14 @@ export async function POST(req: Request) {
         companyName = profile.organization_name;
         uei = profile.uei || '';
         cageCode = profile.cage_code || '';
+        
+        if (companyName.includes('Promo Cues')) {
+          companyDomain = 'promocues.com';
+          contactEmail = 'lloydpearson@promocues.com';
+        } else if (companyName.includes('Package Cues')) {
+          companyDomain = 'packagecues.com';
+          contactEmail = 'lloydpearson@packagecues.com';
+        }
       }
     }
 
@@ -49,7 +59,7 @@ export async function POST(req: Request) {
     }
 
     // 2. Generate Proposal via RAG & OpenRouter
-    const proposal = await grantsRAGEngine.generateGrantProposal(grantText, companyName, uei, cageCode);
+    const proposal = await grantsRAGEngine.generateGrantProposal(grantText, companyName, uei, cageCode, companyDomain, contactEmail);
 
     // 3. Log Telemetry to Amplitude
     const amplitudeApiKey = process.env.AMPLITUDE_API_KEY;

@@ -63,7 +63,9 @@ class GrantsRAGEngine {
     grantRequirementsText: string,
     companyName: string = 'Project Cues, Inc.',
     uei: string = '',
-    cageCode: string = ''
+    cageCode: string = '',
+    companyDomain: string = 'projectcues.com',
+    contactEmail: string = 'lloydpearson@projectcues.com'
   ): Promise<string> {
     let context = '';
     
@@ -153,6 +155,13 @@ class GrantsRAGEngine {
 
     const prompt = `
     You are an expert federal grant proposal writer drafting a highly tailored proposal on behalf of our organization: ${companyName} (UEI: ${uei || 'N/A'}, CAGE Code: ${cageCode || 'N/A'}).
+    
+    OUR COMPANY DETAILS:
+    - Company Name: ${companyName}
+    - CAGE Code: ${cageCode || 'N/A'}
+    - UEI: ${uei || 'N/A'}
+    - Website Domain: ${companyDomain}
+    - Primary Contact Email: ${contactEmail}
     
     OUR COMPANY CAPABILITIES:
     ${capabilities}
