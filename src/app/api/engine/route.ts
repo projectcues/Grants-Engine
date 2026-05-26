@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { GrantsScraper } from '@/lib/scraper';
 import { grantsRAGEngine } from '@/lib/rag';
+import { createClient } from '@/utils/supabase/server';
 
 export const maxDuration = 60; // Set maximum execution time for this route to 60 seconds
 
@@ -13,6 +14,26 @@ export async function POST(req: Request) {
     }
 
     console.log(`Starting Grants Engine run for ${grantUrl}`);
+
+    // Retrieve active company profile from authenticated session
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    let companyName = 'Project Cues, Inc.';
+    let uei = '';
+    let cageCode = '';
+    
+    if (user) {
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('organization_name, uei, cage_code')
+        .eq('id', user.id)
+        .single();
+      if (profile?.organization_name) {
+        companyName = profile.organization_name;
+        uei = profile.uei || '';
+        cageCode = profile.cage_code || '';
+      }
+    }
 
     // 1. Scrape Grant Requirements
     const scraper = new GrantsScraper();
@@ -28,7 +49,7 @@ export async function POST(req: Request) {
     }
 
     // 2. Generate Proposal via RAG & OpenRouter
-    const proposal = await grantsRAGEngine.generateGrantProposal(grantText);
+    const proposal = await grantsRAGEngine.generateGrantProposal(grantText, companyName, uei, cageCode);
 
     // 3. Log Telemetry to Amplitude
     const amplitudeApiKey = process.env.AMPLITUDE_API_KEY;
@@ -44,7 +65,7 @@ export async function POST(req: Request) {
             time: Date.now(),
             event_properties: {
               grant_url: grantUrl,
-              ai_model_used: "claude-sonnet-4.6"
+              ai_model_used: "llama-3.3-70b-free"
             }
           }]
         })
@@ -55,7 +76,8 @@ export async function POST(req: Request) {
     return NextResponse.json({
       success: true,
       grantUrl,
-      proposalSnippet: proposal.substring(0, 500) + '...'
+      proposalSnippet: proposal.substring(0, 500) + '...',
+      proposal: proposal
     });
 
   } catch (error: any) {
@@ -63,3 +85,4 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
+

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { DashboardShell } from '@/components/layout/DashboardShell';
-import { FileText, Target, Award, Search, Sparkles, X, ExternalLink } from 'lucide-react';
+import { FileText, Target, Award, Search, Sparkles, X, ExternalLink, Copy, Check } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import Link from 'next/link';
 
@@ -22,6 +22,18 @@ export default function Home() {
   const [generatedSnippet, setGeneratedSnippet] = useState<string | null>(null);
   const [selectedProject, setSelectedProject] = useState<ActiveProject | null>(null);
   const [activeOrg, setActiveOrg] = useState<string>('Project Cues, Inc.');
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    if (!generatedSnippet) return;
+    try {
+      await navigator.clipboard.writeText(generatedSnippet);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy text', err);
+    }
+  };
   
   const [projects, setProjects] = useState<ActiveProject[]>([]);
   const [proposalCount, setProposalCount] = useState<number>(0);
@@ -91,7 +103,7 @@ export default function Home() {
       const data = await res.json();
       
       if (data.success) {
-        setGeneratedSnippet(data.proposalSnippet);
+        setGeneratedSnippet(data.proposal);
         // Also save to database locally for the user
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
@@ -99,7 +111,7 @@ export default function Home() {
             user_id: user.id,
             source_url: url,
             document_type: 'grant',
-            content: data.proposalSnippet // in reality we'd store the full proposal
+            content: data.proposal
           });
           setProposalCount(prev => prev + 1);
         }
@@ -211,12 +223,33 @@ export default function Home() {
               </form>
 
               {generatedSnippet && (
-                <div className="mt-8 p-6 bg-slate-950 border border-emerald-500/30 rounded-lg">
-                  <h3 className="text-emerald-400 font-medium mb-2 flex items-center gap-2">
-                    <Sparkles className="w-4 h-4" /> 
-                    Generation Complete
-                  </h3>
-                  <p className="text-slate-300 text-sm leading-relaxed whitespace-pre-wrap">{generatedSnippet}</p>
+                <div className="mt-8 p-6 bg-slate-950 border border-emerald-500/30 rounded-lg relative group">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-emerald-400 font-medium flex items-center gap-2">
+                      <Sparkles className="w-4 h-4" /> 
+                      Proposal Draft Complete
+                    </h3>
+                    <button
+                      onClick={handleCopy}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 rounded-md text-xs text-slate-300 transition-colors"
+                      title="Copy full proposal text"
+                    >
+                      {copied ? (
+                        <>
+                          <Check className="w-3.5 h-3.5 text-emerald-400" />
+                          <span>Copied!</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-3.5 h-3.5 text-slate-450" />
+                          <span>Copy Draft</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                  <div className="text-slate-350 text-sm leading-relaxed whitespace-pre-wrap max-h-96 overflow-y-auto pr-2 border-t border-slate-900 pt-4 font-mono select-text text-left">
+                    {generatedSnippet}
+                  </div>
                 </div>
               )}
             </div>
