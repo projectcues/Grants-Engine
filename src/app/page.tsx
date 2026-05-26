@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { DashboardShell } from '@/components/layout/DashboardShell';
 import { FileText, Target, Award, Search, Sparkles } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
+import Link from 'next/link';
 
 interface ActiveProject {
   id: string;
@@ -11,6 +12,7 @@ interface ActiveProject {
   agency: string;
   deadline_date: string;
   amount: number;
+  url?: string;
 }
 
 export default function Home() {
@@ -173,7 +175,7 @@ export default function Home() {
           <div className="bg-slate-900/50 backdrop-blur-md border border-slate-800 rounded-xl p-6">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-medium text-white">Upcoming Deadlines</h3>
-              <button className="text-emerald-400 text-sm hover:text-emerald-300">View All</button>
+              <Link href="/active-projects" className="text-emerald-400 text-sm hover:text-emerald-300">View All</Link>
             </div>
             
             <div className="space-y-4">
@@ -185,6 +187,7 @@ export default function Home() {
                     agency={p.agency}
                     daysLeft={calculateDaysLeft(p.deadline_date)}
                     amount={formatCurrency(p.amount)}
+                    onClick={() => setUrl(p.url || '')}
                   />
                 ))
               ) : (
@@ -213,9 +216,9 @@ function StatCard({ icon, label, value }: { icon: React.ReactNode, label: string
   );
 }
 
-function DeadlineItem({ title, agency, daysLeft, amount }: { title: string, agency: string, daysLeft: number, amount: string }) {
+function DeadlineItem({ title, agency, daysLeft, amount, onClick }: { title: string, agency: string, daysLeft: number, amount: string, onClick?: () => void }) {
   return (
-    <div className="p-4 rounded-lg bg-slate-950 border border-slate-800 hover:border-slate-700 transition-colors cursor-pointer group">
+    <div onClick={onClick} className="p-4 rounded-lg bg-slate-950 border border-slate-800 hover:border-slate-700 transition-colors cursor-pointer group">
       <div className="flex justify-between items-start mb-2">
         <div>
           <h4 className="text-slate-200 font-medium group-hover:text-emerald-400 transition-colors">{title}</h4>
