@@ -22,10 +22,16 @@ export async function POST(request: Request) {
       email = body.email;
       password = body.password;
       fullName = body.full_name || '';
+    } else if (contentType.includes('application/x-www-form-urlencoded')) {
+      const text = await request.text();
+      const params = new URLSearchParams(text);
+      email = params.get('email') || '';
+      password = params.get('password') || '';
+      fullName = params.get('full_name') || '';
     } else {
       const formData = await request.formData();
-      email = formData.get('email') as string;
-      password = formData.get('password') as string;
+      email = formData.get('email') as string || '';
+      password = formData.get('password') as string || '';
       fullName = formData.get('full_name') as string || '';
     }
 

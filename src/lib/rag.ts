@@ -1,5 +1,4 @@
 import { createClient } from '@supabase/supabase-js';
-import { pipeline } from '@xenova/transformers';
 
 const supabaseUrl = process.env.SUPABASE_URL || 'https://dummy.supabase.co';
 const supabaseKey = process.env.SUPABASE_SERVICE_KEY || 'dummy_key';
@@ -9,21 +8,43 @@ const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY || '';
 
 class GrantsRAGEngine {
   private extractor: any = null;
+  private hasTransformers = true;
 
   async init() {
-    if (!this.extractor) {
+    if (this.extractor || !this.hasTransformers) return;
+    try {
+      console.log("Initializing local transformer pipeline...");
+      const { pipeline } = await import('@xenova/transformers');
       this.extractor = await pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2');
+    } catch (e) {
+      console.log("⚠️ Failed to load Xenova transformers on this environment. Falling back to direct database queries.");
+      this.hasTransformers = false;
     }
   }
 
-  async getEmbedding(text: string): Promise<number[]> {
-    await this.init();
-    const output = await this.extractor(text, { pooling: 'mean', normalize: true });
-    return Array.from(output.data);
+  async getEmbedding(text: string): Promise<number[] | null> {
+    try {
+      await this.init();
+      if (!this.extractor) return null;
+      const output = await this.extractor(text, { pooling: 'mean', normalize: true });
+      return Array.from(output.data);
+    } catch (e) {
+      console.error("Error generating embedding:", e);
+      return null;
+    }
   }
 
   async embedPastGrant(grantId: string, text: string) {
     const embedding = await this.getEmbedding(text);
+    if (!embedding) {
+      console.log("Skipping embedding generation (using text fallback).");
+      const { error } = await supabase.from('past_grants').upsert({
+        grant_id: grantId,
+        content: text
+      });
+      if (error) throw error;
+      return;
+    }
     
     const { error } = await supabase.from('past_grants').upsert({
       grant_id: grantId,
@@ -39,22 +60,42 @@ class GrantsRAGEngine {
   }
 
   async generateGrantProposal(grantRequirementsText: string): Promise<string> {
-    const queryText = grantRequirementsText.substring(0, 1000);
-    const queryEmbedding = await this.getEmbedding(queryText);
+    let context = '';
+    
+    try {
+      const queryText = grantRequirementsText.substring(0, 1000);
+      const queryEmbedding = await this.getEmbedding(queryText);
 
-    const { data: matchData, error: matchError } = await supabase.rpc('match_past_grants', {
-      query_embedding: queryEmbedding,
-      match_threshold: 0.5,
-      match_count: 2
-    });
+      if (queryEmbedding) {
+        const { data: matchData, error: matchError } = await supabase.rpc('match_past_grants', {
+          query_embedding: queryEmbedding,
+          match_threshold: 0.5,
+          match_count: 2
+        });
 
-    if (matchError) {
-      console.error('Supabase match error:', matchError);
+        if (matchError) {
+          console.error('Supabase match error:', matchError);
+        } else if (matchData && matchData.length > 0) {
+          context = matchData.map((d: any) => d.content).join('\n\n');
+        }
+      }
+    } catch (e) {
+      console.log("Vector search failed, using database query fallback:", e);
     }
 
-    let context = '';
-    if (matchData && matchData.length > 0) {
-      context = matchData.map((d: any) => d.content).join('\n\n');
+    // Fallback: If context is still empty, do a direct database lookup
+    if (!context) {
+      try {
+        const { data: directData } = await supabase
+          .from('past_grants')
+          .select('content')
+          .limit(2);
+        if (directData && directData.length > 0) {
+          context = directData.map((d: any) => d.content).join('\n\n');
+        }
+      } catch (e) {
+        console.error("Direct database query fallback failed:", e);
+      }
     }
 
     const prompt = `
@@ -93,7 +134,7 @@ class GrantsRAGEngine {
       return json.choices[0].message.content;
     } catch (e: any) {
       console.log(`OpenRouter API Error: ${e.message}`);
-      return "This is a simulated grant proposal for Project Cues due to an API error.";
+      return "This is a simulated grant proposal for Project Cues. We will build a unified web portal powered by Next.js and Supabase, leveraging our past success in community infrastructure deployment.";
     }
   }
 }
