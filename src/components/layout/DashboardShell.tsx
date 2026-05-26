@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
-import { Shield, Home, FileText, Target, Activity, Settings, User, LogOut } from 'lucide-react';
+import { Shield, Home, FileText, Target, Activity, Settings, User, LogOut, Sparkles } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
@@ -85,6 +85,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         
         <nav className="flex-1 py-8 px-4 flex flex-col gap-2">
           <NavItem href="/" icon={<Home />} label="Overview" active={pathname === '/'} />
+          <NavItem href="/best-matches" icon={<Sparkles />} label="Best Matches" active={pathname === '/best-matches'} />
           <NavItem href="/active-projects" icon={<FileText />} label="Active Grants" active={pathname === '/active-projects'} />
           <NavItem href="/eligibility" icon={<Target />} label="Eligibility" active={pathname === '/eligibility'} />
           <NavItem href="/analytics" icon={<Activity />} label="Analytics" active={pathname === '/analytics'} />
