@@ -24,6 +24,8 @@ export default function Home() {
   const [selectedProject, setSelectedProject] = useState<ActiveProject | null>(null);
   const [activeOrg, setActiveOrg] = useState<string>('Project Cues, Inc.');
   const [copied, setCopied] = useState(false);
+  const [discoveredSources, setDiscoveredSources] = useState<any[]>([]);
+  const [activeTab, setActiveTab] = useState<'draft' | 'checklist' | 'attachments'>('draft');
 
   const handleCopy = async () => {
     if (!generatedSnippet) return;
@@ -82,6 +84,16 @@ export default function Home() {
           .select('*', { count: 'exact', head: true })
           .eq('user_id', user.id);
         setProposalCount(count || 0);
+
+        // Fetch user's discovered sources
+        const { data: sourcesData } = await supabase
+          .from('discovered_sources')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(5);
+        if (sourcesData) {
+          setDiscoveredSources(sourcesData);
+        }
       }
     }
     fetchData();
@@ -115,6 +127,16 @@ export default function Home() {
             content: data.proposal
           });
           setProposalCount(prev => prev + 1);
+          
+          // Reload discovered sources
+          const { data: sourcesData } = await supabase
+            .from('discovered_sources')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(5);
+          if (sourcesData) {
+            setDiscoveredSources(sourcesData);
+          }
         }
       } else {
         alert("Error: " + data.error);
@@ -223,36 +245,114 @@ export default function Home() {
                 </button>
               </form>
 
-              {generatedSnippet && (
-                <div className="mt-8 p-6 bg-slate-950 border border-emerald-500/30 rounded-lg relative group">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-emerald-400 font-medium flex items-center gap-2">
-                      <Sparkles className="w-4 h-4" /> 
-                      Proposal Draft Complete
-                    </h3>
-                    <button
-                      onClick={handleCopy}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 rounded-md text-xs text-slate-300 transition-colors"
-                      title="Copy full proposal text"
-                    >
-                      {copied ? (
-                        <>
-                          <Check className="w-3.5 h-3.5 text-emerald-400" />
-                          <span>Copied!</span>
-                        </>
-                      ) : (
-                        <>
-                          <Copy className="w-3.5 h-3.5 text-slate-450" />
-                          <span>Copy Draft</span>
-                        </>
+              {generatedSnippet && (() => {
+                // Parse proposal markdown into three parts
+                const getProposalSections = (snippet: string | null) => {
+                  if (!snippet) return { draft: '', checklist: '', attachments: '' };
+                  
+                  const submissionIndex = snippet.indexOf('### 📤 Submission & Checklist Instructions');
+                  const attachmentsIndex = snippet.indexOf('### 📎 Opportunity Attachments & Forms');
+
+                  let draft = snippet;
+                  let checklist = '';
+                  let attachments = '';
+
+                  if (submissionIndex !== -1 && attachmentsIndex !== -1) {
+                    draft = snippet.substring(0, submissionIndex);
+                    checklist = snippet.substring(submissionIndex, attachmentsIndex);
+                    attachments = snippet.substring(attachmentsIndex);
+                  } else if (submissionIndex !== -1) {
+                    draft = snippet.substring(0, submissionIndex);
+                    checklist = snippet.substring(submissionIndex);
+                  } else if (attachmentsIndex !== -1) {
+                    draft = snippet.substring(0, attachmentsIndex);
+                    attachments = snippet.substring(attachmentsIndex);
+                  }
+
+                  return { 
+                    draft: draft.trim(), 
+                    checklist: checklist.trim(), 
+                    attachments: attachments.trim() 
+                  };
+                };
+
+                const sections = getProposalSections(generatedSnippet);
+
+                return (
+                  <div className="mt-8 p-6 bg-slate-950 border border-slate-800 rounded-lg relative group">
+                    <div className="flex items-center justify-between mb-4 border-b border-slate-900 pb-4">
+                      <h3 className="text-white font-medium flex items-center gap-2">
+                        <Sparkles className="w-4 h-4 text-emerald-400" /> 
+                        Generated Opportunity Workspace
+                      </h3>
+                      <button
+                        onClick={handleCopy}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 rounded-md text-xs text-slate-300 transition-colors"
+                        title="Copy full workspace details"
+                      >
+                        {copied ? (
+                          <>
+                            <Check className="w-3.5 h-3.5 text-emerald-400" />
+                            <span>Copied!</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-3.5 h-3.5 text-slate-450" />
+                            <span>Copy Workspace</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+
+                    {/* Tabs Selector */}
+                    <div className="flex gap-2 mb-6 border-b border-slate-900 pb-3">
+                      <button
+                        onClick={() => setActiveTab('draft')}
+                        className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all ${
+                          activeTab === 'draft'
+                            ? 'bg-emerald-500/10 text-emerald-450 border border-emerald-500/20'
+                            : 'text-slate-400 hover:text-slate-200 border border-transparent'
+                        }`}
+                      >
+                        Draft Proposal
+                      </button>
+                      <button
+                        onClick={() => setActiveTab('checklist')}
+                        className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all ${
+                          activeTab === 'checklist'
+                            ? 'bg-emerald-500/10 text-emerald-450 border border-emerald-500/20'
+                            : 'text-slate-400 hover:text-slate-200 border border-transparent'
+                        }`}
+                      >
+                        Submission Checklist
+                      </button>
+                      <button
+                        onClick={() => setActiveTab('attachments')}
+                        className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all ${
+                          activeTab === 'attachments'
+                            ? 'bg-emerald-500/10 text-emerald-450 border border-emerald-500/20'
+                            : 'text-slate-400 hover:text-slate-200 border border-transparent'
+                        }`}
+                      >
+                        Forms & Attachments
+                      </button>
+                    </div>
+
+                    {/* Tab Contents */}
+                    <div className="text-slate-350 text-sm leading-relaxed max-h-96 overflow-y-auto pr-2 select-text text-left">
+                      {activeTab === 'draft' && (
+                        <MarkdownRenderer content={sections.draft} />
                       )}
-                    </button>
+                      {activeTab === 'checklist' && (
+                        <MarkdownRenderer content={sections.checklist || '### 📤 Submission Checklist\n\nNo specific submission guidelines found. Please refer to the official Opportunity details.'} />
+                      )}
+                      {activeTab === 'attachments' && (
+                        <MarkdownRenderer content={sections.attachments || '### 📎 Downloadable Attachments & Forms\n\nNo attachment forms could be parsed. Refer to the opportunity details.'} />
+                      )}
+                    </div>
                   </div>
-                  <div className="text-slate-350 text-sm leading-relaxed max-h-96 overflow-y-auto pr-2 border-t border-slate-900 pt-4 select-text text-left">
-                    <MarkdownRenderer content={generatedSnippet} />
-                  </div>
-                </div>
-              )}
+                );
+              })()}
             </div>
           </div>
 
@@ -286,6 +386,40 @@ export default function Home() {
                 ))
               ) : (
                 <p className="text-slate-500 text-sm">No active projects found.</p>
+              )}
+            </div>
+          </div>
+
+          {/* Discovered Opportunities & Sources */}
+          <div className="bg-slate-900/50 backdrop-blur-md border border-slate-800 rounded-xl p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-medium text-white flex items-center gap-2">
+                <Target className="w-5 h-5 text-emerald-400" />
+                Discovered Sources
+              </h3>
+            </div>
+            <p className="text-xs text-slate-400 mb-4">
+              These reference directories and solicitation pipelines were automatically harvested during previous runs.
+            </p>
+            
+            <div className="space-y-3">
+              {discoveredSources.length > 0 ? (
+                discoveredSources.map((ds) => (
+                  <div key={ds.id} className="p-3 bg-slate-950 border border-slate-850 rounded-lg flex flex-col gap-1.5 text-left">
+                    <span className="text-sm font-medium text-slate-200 truncate" title={ds.name}>{ds.name}</span>
+                    <a 
+                      href={ds.url} 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      className="text-xs text-emerald-400 hover:underline inline-flex items-center gap-1 truncate"
+                    >
+                      <span className="truncate">{ds.url}</span>
+                      <ExternalLink className="w-3 h-3 shrink-0" />
+                    </a>
+                  </div>
+                ))
+              ) : (
+                <p className="text-slate-500 text-xs py-4 text-center">No discovered sources yet. Run the engine to harvest links.</p>
               )}
             </div>
           </div>

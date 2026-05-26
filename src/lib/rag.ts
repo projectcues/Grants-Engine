@@ -174,6 +174,8 @@ class GrantsRAGEngine {
     
     INSTRUCTIONS:
     Draft a comprehensive, highly professional technical grant proposal that addresses all of the grant requirements listed above. Directly map our company's capabilities and past performance context to show why we are the ideal organization to receive this funding. Provide clear implementation steps, technical details (using modern technologies like Next.js, Supabase, TypeScript, and AI pipelines where relevant to the task), and write in a formal, persuasive government contracting tone. Do not use placeholders; write the response fully.
+
+    ADDRESSING & PERSONA RULE: The proposal MUST be written directly to the soliciting agency (e.g., National Institutes of Health, Department of Health and Human Services) or the contracting officer, NOT to the user. Do NOT include any introductory comments, pleasantries, or meta-discussions addressing the user (such as 'Here is your proposal' or 'Thank you for providing company details'). Start directly with the formal proposal cover letter or technical response document addressed to the soliciting agency.
     
     CRITICAL REQUIREMENT: At the very end of your response, you MUST include a dedicated section titled "### 📤 Submission & Checklist Instructions". 
     In this section, locate and parse any submission details or rules found in the grant requirements, and provide a clear, bulleted checklist of:

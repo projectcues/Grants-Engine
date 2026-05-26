@@ -66,6 +66,51 @@ export async function POST(req: Request) {
       `;
     }
 
+    // Harvest discovered reference sources
+    try {
+      const linkRegex = /\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g;
+      let match;
+      const discovered: { name: string; url: string }[] = [];
+      while ((match = linkRegex.exec(grantText)) !== null) {
+        const text = match[1].trim();
+        const url = match[2].trim();
+        const lowUrl = url.toLowerCase();
+        
+        const isReferenceSource = 
+          (lowUrl.includes('grants.nih.gov') || 
+           lowUrl.includes('nsf.gov/funding') || 
+           (lowUrl.includes('grants.gov') && !lowUrl.includes('search-results-detail/')) ||
+           lowUrl.includes('sam.gov') ||
+           lowUrl.includes('piee.eb.mil') ||
+           lowUrl.includes('acquisition.gov') ||
+           lowUrl.includes('fbo.gov')) && 
+          !lowUrl.endsWith('.pdf') && 
+          !lowUrl.endsWith('.docx') && 
+          !lowUrl.endsWith('.zip');
+          
+        if (isReferenceSource && text.length > 2 && text.length < 150) {
+          discovered.push({ name: text, url: url });
+        }
+      }
+
+      if (discovered.length > 0) {
+        console.log(`Harvested ${discovered.length} reference sources. Inserting into discovered_sources...`);
+        for (const source of discovered) {
+          await supabase
+            .from('discovered_sources')
+            .upsert({
+              user_id: authResult.userId,
+              name: source.name,
+              url: source.url,
+              source_opportunity_url: grantUrl,
+              status: 'discovered'
+            }, { onConflict: 'url' });
+        }
+      }
+    } catch (err) {
+      console.error('Error harvesting reference sources:', err);
+    }
+
     // 2. Generate Proposal via RAG & OpenRouter
     const proposal = await grantsRAGEngine.generateGrantProposal(grantText, companyName, uei, cageCode, companyDomain, contactEmail);
 
