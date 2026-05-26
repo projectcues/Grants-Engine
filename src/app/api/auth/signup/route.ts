@@ -3,6 +3,14 @@ import { createClient } from '@/utils/supabase/server';
 
 export async function POST(request: Request) {
   console.log('[POST /api/auth/signup] Request received');
+  
+  // Resolve base URL taking reverse proxies into account
+  const url = new URL(request.url);
+  const forwardedHost = request.headers.get('x-forwarded-host') || url.host;
+  const protoHeader = request.headers.get('x-forwarded-proto') || '';
+  const forwardedProto = protoHeader.split(',')[0].trim() || (request.url.startsWith('https') ? 'https' : 'http');
+  const baseUrl = `${forwardedProto}://${forwardedHost}`;
+
   try {
     const contentType = request.headers.get('content-type') || '';
     let email = '';
@@ -24,7 +32,7 @@ export async function POST(request: Request) {
     console.log('[POST /api/auth/signup] Attempting signup for:', email);
 
     if (!email || !password) {
-      return NextResponse.redirect(new URL('/login?error=Email and password are required', request.url), 303);
+      return NextResponse.redirect(new URL('/login?error=Email and password are required', baseUrl), 303);
     }
 
     const supabase = await createClient();
@@ -40,13 +48,13 @@ export async function POST(request: Request) {
 
     if (error) {
       console.log('[POST /api/auth/signup] Signup failed:', error.message);
-      return NextResponse.redirect(new URL(`/login?error=${encodeURIComponent(error.message)}`, request.url), 303);
+      return NextResponse.redirect(new URL(`/login?error=${encodeURIComponent(error.message)}`, baseUrl), 303);
     }
 
     console.log('[POST /api/auth/signup] Signup succeeded!');
-    return NextResponse.redirect(new URL('/', request.url), 303);
+    return NextResponse.redirect(new URL('/', baseUrl), 303);
   } catch (err: any) {
     console.error('[POST /api/auth/signup] Exception:', err);
-    return NextResponse.redirect(new URL(`/login?error=${encodeURIComponent(err.message)}`, request.url), 303);
+    return NextResponse.redirect(new URL(`/login?error=${encodeURIComponent(err.message)}`, baseUrl), 303);
   }
 }
