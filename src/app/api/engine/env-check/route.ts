@@ -31,6 +31,8 @@ export async function GET(request: NextRequest) {
     SUPABASE_URL: process.env.SUPABASE_URL || 'not set',
     SUPABASE_ANON_KEY_EXISTS: !!process.env.SUPABASE_ANON_KEY,
     SUPABASE_SERVICE_ROLE_KEY_EXISTS: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+    OPENROUTER_API_KEY_EXISTS: !!process.env.OPENROUTER_API_KEY,
+    AMPLITUDE_API_KEY_EXISTS: !!process.env.AMPLITUDE_API_KEY,
     NODE_ENV: process.env.NODE_ENV || 'not set',
   });
 }
