@@ -5,6 +5,7 @@ import { DashboardShell } from '@/components/layout/DashboardShell';
 import { FileText, Target, Award, Search, Sparkles, X, ExternalLink, Copy, Check } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import Link from 'next/link';
+import { MarkdownRenderer } from '@/components/MarkdownRenderer';
 
 interface ActiveProject {
   id: string;
@@ -247,8 +248,8 @@ export default function Home() {
                       )}
                     </button>
                   </div>
-                  <div className="text-slate-350 text-sm leading-relaxed whitespace-pre-wrap max-h-96 overflow-y-auto pr-2 border-t border-slate-900 pt-4 font-mono select-text text-left">
-                    {generatedSnippet}
+                  <div className="text-slate-350 text-sm leading-relaxed max-h-96 overflow-y-auto pr-2 border-t border-slate-900 pt-4 select-text text-left">
+                    <MarkdownRenderer content={generatedSnippet} />
                   </div>
                 </div>
               )}

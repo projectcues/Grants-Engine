@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { GrantsScraper } from '@/lib/scraper';
 import { grantsRAGEngine } from '@/lib/rag';
-import { createClient } from '@/utils/supabase/server';
+import { createClient } from '@supabase/supabase-js';
+import { authenticateRequest } from '@/utils/auth';
 
 export const maxDuration = 60; // Set maximum execution time for this route to 60 seconds
 
@@ -13,35 +14,42 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'grantUrl is required' }, { status: 400 });
     }
 
-    console.log(`Starting Grants Engine run for ${grantUrl}`);
+    // Verify authentication via session cookie or API key
+    const authResult = await authenticateRequest(req);
+    if (!authResult.authenticated || !authResult.userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
-    // Retrieve active company profile from authenticated session
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    console.log(`Starting Grants Engine run for ${grantUrl} (user: ${authResult.userId})`);
+
+    // Retrieve active company profile from Supabase service client
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://dbzbsqreymotzovhgodv.supabase.co';
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY || '';
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
     let companyName = 'Project Cues, Inc.';
     let uei = '';
     let cageCode = '';
     let companyDomain = 'projectcues.com';
     let contactEmail = 'lloydpearson@projectcues.com';
     
-    if (user) {
-      const { data: profile } = await supabase
-        .from('user_profiles')
-        .select('organization_name, uei, cage_code')
-        .eq('id', user.id)
-        .single();
-      if (profile?.organization_name) {
-        companyName = profile.organization_name;
-        uei = profile.uei || '';
-        cageCode = profile.cage_code || '';
-        
-        if (companyName.includes('Promo Cues')) {
-          companyDomain = 'promocues.com';
-          contactEmail = 'lloydpearson@promocues.com';
-        } else if (companyName.includes('Package Cues')) {
-          companyDomain = 'packagecues.com';
-          contactEmail = 'lloydpearson@packagecues.com';
-        }
+    const { data: profile } = await supabase
+      .from('user_profiles')
+      .select('organization_name, uei, cage_code')
+      .eq('id', authResult.userId)
+      .single();
+
+    if (profile?.organization_name) {
+      companyName = profile.organization_name;
+      uei = profile.uei || '';
+      cageCode = profile.cage_code || '';
+      
+      if (companyName.includes('Promo Cues')) {
+        companyDomain = 'promocues.com';
+        contactEmail = 'lloydpearson@promocues.com';
+      } else if (companyName.includes('Package Cues')) {
+        companyDomain = 'packagecues.com';
+        contactEmail = 'lloydpearson@packagecues.com';
       }
     }
 

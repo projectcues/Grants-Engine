@@ -174,6 +174,15 @@ class GrantsRAGEngine {
     
     INSTRUCTIONS:
     Draft a comprehensive, highly professional technical grant proposal that addresses all of the grant requirements listed above. Directly map our company's capabilities and past performance context to show why we are the ideal organization to receive this funding. Provide clear implementation steps, technical details (using modern technologies like Next.js, Supabase, TypeScript, and AI pipelines where relevant to the task), and write in a formal, persuasive government contracting tone. Do not use placeholders; write the response fully.
+    
+    CRITICAL REQUIREMENT: At the very end of your response, you MUST include a dedicated section titled "### 📤 Submission & Checklist Instructions". 
+    In this section, locate and parse any submission details or rules found in the grant requirements, and provide a clear, bulleted checklist of:
+    1. Where to submit (e.g. email, portal, physical address).
+    2. Format requirements (e.g. PDF, font size, margins, file naming).
+    3. Required attachments (e.g. budget narrative, UEI proof, key personnel resumes).
+    4. Due date/time (if specified, otherwise note not specified).
+    5. Any other mandatory submission checklist items.
+    If specific submission instructions cannot be found, compile a general checklist based on standard federal grant submissions customized for this proposal.
     `;
 
     const models = [
@@ -214,7 +223,7 @@ class GrantsRAGEngine {
     }
     
     // Fallback if all models are rate-limited or fail
-    return `[PROPOSAL DRAFT FOR ${companyName.toUpperCase()}]\n\nSummary of Proposal:\nWe propose a unified technical response to address the solicitation requirements. On behalf of ${companyName} (UEI: ${uei || 'N/A'}, CAGE: ${cageCode || 'N/A'}), we will utilize our core capabilities to deliver a robust solution.\n\nKey Capabilities Offered:\n${capabilities}\n\nPast Performance Reference:\n${context || fallbackContext}\n\nTechnical Approach:\nWe will build a high-performance, secure web infrastructure leveraging Next.js, Supabase, and dynamic database schemas. Our project plan includes requirements verification, architecture design, systems integration, and pilot deployment in accordance with the specified schedule. (Note: The AI generator is currently experiencing heavy rate limits, please retry in a moment to obtain a full response.)`;
+    return `[PROPOSAL DRAFT FOR ${companyName.toUpperCase()}]\n\nSummary of Proposal:\nWe propose a unified technical response to address the solicitation requirements. On behalf of ${companyName} (UEI: ${uei || 'N/A'}, CAGE: ${cageCode || 'N/A'}), we will utilize our core capabilities to deliver a robust solution.\n\nKey Capabilities Offered:\n${capabilities}\n\nPast Performance Reference:\n${context || fallbackContext}\n\nTechnical Approach:\nWe will build a high-performance, secure web infrastructure leveraging Next.js, Supabase, and dynamic database schemas. Our project plan includes requirements verification, architecture design, systems integration, and pilot deployment in accordance with the specified schedule. (Note: The AI generator is currently experiencing heavy rate limits, please retry in a moment to obtain a full response.)\n\n### 📤 Submission & Checklist Instructions\n- **Submission Channel**: Grants.gov / NSF FastLane portal\n- **Format**: PDF format, 1-inch margins, 11pt Arial/Georgia font minimum\n- **Required Attachments**: Project Summary, Project Description, References Cited, Biographical Sketches, Budget and Budget Justification, Current and Pending Support\n- **Due Date**: Refer to official grant solicitation page`;
   }
 }
 
