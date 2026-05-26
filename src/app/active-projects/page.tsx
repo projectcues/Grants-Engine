@@ -15,7 +15,9 @@ export default async function ActiveProjectsPage() {
               <div key={p.id} className="p-4 bg-slate-950 border border-slate-800 rounded-lg">
                 <h3 className="text-lg text-emerald-400">{p.title}</h3>
                 <p className="text-sm text-slate-400">{p.agency} • Deadline: {new Date(p.deadline_date).toLocaleDateString()}</p>
-                <p className="text-sm text-slate-300 mt-2 font-medium">${p.amount.toLocaleString()}</p>
+                <p className="text-sm text-slate-300 mt-2 font-medium">
+                  {p.amount ? `$${p.amount.toLocaleString()}` : 'Funding TBD'}
+                </p>
               </div>
             ))
           ) : (

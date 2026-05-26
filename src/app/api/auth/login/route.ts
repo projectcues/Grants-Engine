@@ -3,19 +3,28 @@ import { createClient } from '@/utils/supabase/server';
 
 export async function POST(request: Request) {
   console.log('[POST /api/auth/login] Request received');
-  
+  console.log('[POST /api/auth/login] request.url:', request.url);
+  console.log('[POST /api/auth/login] x-forwarded-host:', request.headers.get('x-forwarded-host'));
+  console.log('[POST /api/auth/login] host:', request.headers.get('host'));
+  console.log('[POST /api/auth/login] x-forwarded-proto:', request.headers.get('x-forwarded-proto'));
+
   // Resolve base URL taking reverse proxies into account
   const forwardedHost = request.headers.get('x-forwarded-host') || request.headers.get('host') || 'grants.projectcues.com';
   const protoHeader = request.headers.get('x-forwarded-proto') || '';
   const forwardedProto = protoHeader.split(',')[0].trim() || 'https';
   const baseUrl = `${forwardedProto}://${forwardedHost}`;
 
+  console.log('[POST /api/auth/login] resolved baseUrl:', baseUrl);
+
   let url: URL;
   try {
     url = new URL(request.url);
   } catch (e) {
+    console.log('[POST /api/auth/login] request.url is relative, parsing with baseUrl');
     url = new URL(request.url, baseUrl);
   }
+
+  console.log('[POST /api/auth/login] parsed url:', url.toString());
 
   try {
     const contentType = request.headers.get('content-type') || '';

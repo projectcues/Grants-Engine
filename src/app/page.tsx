@@ -166,7 +166,7 @@ export default function Home() {
           <div className="grid grid-cols-2 gap-6">
             <StatCard icon={<FileText />} label="Your Proposals" value={proposalCount.toString()} />
             {/* Compute dynamic total from DB projects for demo purposes, or keep standard value */}
-            <StatCard icon={<Award />} label="Eligible Funds" value={formatCurrency(projects.reduce((acc, curr) => acc + curr.amount, 0))} />
+            <StatCard icon={<Award />} label="Eligible Funds" value={formatCurrency(projects.reduce((acc, curr) => acc + (curr.amount || 0), 0))} />
           </div>
         </div>
 
