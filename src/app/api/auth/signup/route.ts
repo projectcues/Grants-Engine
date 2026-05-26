@@ -38,7 +38,12 @@ export async function POST(request: Request) {
     console.log('[POST /api/auth/signup] Attempting signup for:', email);
 
     if (!email || !password) {
-      return NextResponse.redirect(new URL('/login?error=Email and password are required', baseUrl), 303);
+      return new Response(null, {
+        status: 303,
+        headers: {
+          'Location': new URL('/login?error=Email and password are required', baseUrl).toString()
+        }
+      });
     }
 
     const supabase = await createClient();
@@ -54,13 +59,28 @@ export async function POST(request: Request) {
 
     if (error) {
       console.log('[POST /api/auth/signup] Signup failed:', error.message);
-      return NextResponse.redirect(new URL(`/login?error=${encodeURIComponent(error.message)}`, baseUrl), 303);
+      return new Response(null, {
+        status: 303,
+        headers: {
+          'Location': new URL(`/login?error=${encodeURIComponent(error.message)}`, baseUrl).toString()
+        }
+      });
     }
 
     console.log('[POST /api/auth/signup] Signup succeeded!');
-    return NextResponse.redirect(new URL('/', baseUrl), 303);
+    return new Response(null, {
+      status: 303,
+      headers: {
+        'Location': new URL('/', baseUrl).toString()
+      }
+    });
   } catch (err: any) {
     console.error('[POST /api/auth/signup] Exception:', err);
-    return NextResponse.redirect(new URL(`/login?error=${encodeURIComponent(err.message)}`, baseUrl), 303);
+    return new Response(null, {
+      status: 303,
+      headers: {
+        'Location': new URL(`/login?error=${encodeURIComponent(err.message)}`, baseUrl).toString()
+      }
+    });
   }
 }

@@ -34,7 +34,12 @@ export async function POST(request: Request) {
     console.log('[POST /api/auth/login] Attempting login for:', email);
 
     if (!email || !password) {
-      return NextResponse.redirect(new URL('/login?error=Email and password are required', baseUrl), 303);
+      return new Response(null, {
+        status: 303,
+        headers: {
+          'Location': new URL('/login?error=Email and password are required', baseUrl).toString()
+        }
+      });
     }
 
     const supabase = await createClient();
@@ -45,13 +50,28 @@ export async function POST(request: Request) {
 
     if (error) {
       console.log('[POST /api/auth/login] Login failed:', error.message);
-      return NextResponse.redirect(new URL(`/login?error=${encodeURIComponent(error.message)}`, baseUrl), 303);
+      return new Response(null, {
+        status: 303,
+        headers: {
+          'Location': new URL(`/login?error=${encodeURIComponent(error.message)}`, baseUrl).toString()
+        }
+      });
     }
 
     console.log('[POST /api/auth/login] Login succeeded! User ID:', data.user?.id);
-    return NextResponse.redirect(new URL('/', baseUrl), 303);
+    return new Response(null, {
+      status: 303,
+      headers: {
+        'Location': new URL('/', baseUrl).toString()
+      }
+    });
   } catch (err: any) {
     console.error('[POST /api/auth/login] Exception:', err);
-    return NextResponse.redirect(new URL(`/login?error=${encodeURIComponent(err.message)}`, baseUrl), 303);
+    return new Response(null, {
+      status: 303,
+      headers: {
+        'Location': new URL(`/login?error=${encodeURIComponent(err.message)}`, baseUrl).toString()
+      }
+    });
   }
 }
