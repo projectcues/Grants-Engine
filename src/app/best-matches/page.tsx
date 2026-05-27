@@ -98,7 +98,8 @@ export default function BestMatchesPage() {
       setLoading(false);
     }
     loadProjects();
-  }, [supabase]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const formatCurrency = (amount: any, showZeroAsTbd = true) => {
     if (amount === null || amount === undefined || (showZeroAsTbd && amount === 0)) {

@@ -55,7 +55,8 @@ export default function AnalyticsPage() {
       setLoading(false);
     }
     load();
-  }, [supabase]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // ── Summary Stats ──
   const contracts = useMemo(() => projects.filter(p => p.project_type === 'contract'), [projects]);

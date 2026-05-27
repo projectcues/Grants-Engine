@@ -104,7 +104,8 @@ export default function Home() {
       }
     }
     fetchData();
-  }, [supabase]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

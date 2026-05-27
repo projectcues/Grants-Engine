@@ -25,7 +25,8 @@ export default function EligibilityPage() {
       setLoading(false);
     }
     fetchProfile();
-  }, [supabase]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   if (loading) {
     return (

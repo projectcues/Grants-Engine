@@ -32,7 +32,8 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
       setLoadingOrg(false);
     };
     fetchUser();
-  }, [supabase]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();

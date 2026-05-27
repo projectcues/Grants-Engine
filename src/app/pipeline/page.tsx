@@ -86,7 +86,10 @@ export default function PipelinePage() {
 
   const loadPipeline = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!user) {
+      setLoading(false);
+      return;
+    }
 
     const { data } = await supabase
       .from('bid_pipeline')
@@ -99,7 +102,8 @@ export default function PipelinePage() {
 
     if (data) setItems(data as any);
     setLoading(false);
-  }, [supabase]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => { loadPipeline(); }, [loadPipeline]);
 
