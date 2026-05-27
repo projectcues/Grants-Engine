@@ -14,6 +14,10 @@ export default function SettingsPage() {
   const [orgName, setOrgName] = useState('');
   const [cageCode, setCageCode] = useState('');
   const [uei, setUei] = useState('');
+  const [naicsCodes, setNaicsCodes] = useState('');
+  const [duns, setDuns] = useState('');
+  const [samStatus, setSamStatus] = useState('unknown');
+  const [capabilitiesStatement, setCapabilitiesStatement] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -55,6 +59,10 @@ export default function SettingsPage() {
           setOrgName(profile.organization_name || '');
           setCageCode(profile.cage_code || '');
           setUei(profile.uei || '');
+          setNaicsCodes((profile.naics_codes || []).join(', '));
+          setDuns(profile.duns || '');
+          setSamStatus(profile.sam_registration_status || 'unknown');
+          setCapabilitiesStatement(profile.capabilities_statement || '');
         } else {
           setFullName(user.user_metadata?.full_name || '');
         }
@@ -82,6 +90,10 @@ export default function SettingsPage() {
           organization_name: orgName,
           cage_code: cageCode,
           uei: uei,
+          naics_codes: naicsCodes.split(',').map(s => s.trim()).filter(Boolean),
+          duns: duns || null,
+          sam_registration_status: samStatus,
+          capabilities_statement: capabilitiesStatement || null,
           role: 'Admin'
         });
 
@@ -103,10 +115,10 @@ export default function SettingsPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      // Generate plaintext token
+      // Generate plaintext token with pc_c_ prefix for Contracts
       const array = new Uint8Array(24);
       window.crypto.getRandomValues(array);
-      const token = 'pc_g_' + Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
+      const token = 'pc_c_' + Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
 
       // Hash token using SHA-256
       const encoder = new TextEncoder();
@@ -164,7 +176,7 @@ export default function SettingsPage() {
     return (
       <DashboardShell>
         <div className="flex items-center justify-center min-h-[400px]">
-          <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
+          <Loader2 className="w-8 h-8 text-cyan-500 animate-spin" />
         </div>
       </DashboardShell>
     );
@@ -181,7 +193,7 @@ export default function SettingsPage() {
           {message && (
             <div className={`p-4 mb-6 rounded-lg border flex items-center gap-3 text-sm text-left ${
               message.type === 'success' 
-                ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' 
+                ? 'bg-cyan-500/10 border-cyan-500/20 text-cyan-400' 
                 : 'bg-red-500/10 border-red-500/20 text-red-400'
             }`}>
               {message.type === 'success' ? <CheckCircle className="w-5 h-5 shrink-0" /> : <AlertCircle className="w-5 h-5 shrink-0" />}
@@ -207,7 +219,7 @@ export default function SettingsPage() {
                 value={fullName} 
                 onChange={(e) => setFullName(e.target.value)} 
                 required
-                className="w-full bg-slate-950 border border-slate-800 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 rounded-lg px-4 py-3 text-slate-200 outline-none transition-all text-left" 
+                className="w-full bg-slate-950 border border-slate-800 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 rounded-lg px-4 py-3 text-slate-200 outline-none transition-all text-left" 
               />
             </div>
 
@@ -218,7 +230,7 @@ export default function SettingsPage() {
                 value={orgName} 
                 onChange={(e) => setOrgName(e.target.value)} 
                 placeholder="e.g. Acme Corporation"
-                className="w-full bg-slate-950 border border-slate-800 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 rounded-lg px-4 py-3 text-slate-200 outline-none transition-all text-left" 
+                className="w-full bg-slate-950 border border-slate-800 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 rounded-lg px-4 py-3 text-slate-200 outline-none transition-all text-left" 
               />
             </div>
 
@@ -231,7 +243,7 @@ export default function SettingsPage() {
                   onChange={(e) => setCageCode(e.target.value.toUpperCase())} 
                   placeholder="e.g. 1AB23"
                   maxLength={5}
-                  className="w-full bg-slate-950 border border-slate-800 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 rounded-lg px-4 py-3 text-slate-200 outline-none transition-all text-left" 
+                  className="w-full bg-slate-950 border border-slate-800 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 rounded-lg px-4 py-3 text-slate-200 outline-none transition-all text-left" 
                 />
               </div>
               <div>
@@ -242,15 +254,68 @@ export default function SettingsPage() {
                   onChange={(e) => setUei(e.target.value.toUpperCase())} 
                   placeholder="e.g. AB12CD34EF56"
                   maxLength={12}
-                  className="w-full bg-slate-950 border border-slate-800 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 rounded-lg px-4 py-3 text-slate-200 outline-none transition-all text-left font-mono" 
+                  className="w-full bg-slate-950 border border-slate-800 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 rounded-lg px-4 py-3 text-slate-200 outline-none transition-all text-left font-mono" 
                 />
+              </div>
+            </div>
+
+            <div className="border-t border-slate-800 pt-6 mt-6">
+              <h3 className="text-lg font-medium text-slate-200 mb-4 text-left">Government Contracting Profile</h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-400 mb-1 text-left">NAICS Codes (comma-separated)</label>
+                  <input 
+                    type="text" 
+                    value={naicsCodes} 
+                    onChange={(e) => setNaicsCodes(e.target.value)} 
+                    placeholder="e.g. 541511, 541512, 518210"
+                    className="w-full bg-slate-950 border border-slate-800 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 rounded-lg px-4 py-3 text-slate-200 outline-none transition-all text-left font-mono" 
+                  />
+                  <p className="text-xs text-slate-600 mt-1 text-left">Your primary NAICS codes — used for AI-powered winnability scoring</p>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-400 mb-1 text-left">DUNS Number</label>
+                    <input 
+                      type="text" 
+                      value={duns} 
+                      onChange={(e) => setDuns(e.target.value)} 
+                      placeholder="e.g. 123456789"
+                      maxLength={9}
+                      className="w-full bg-slate-950 border border-slate-800 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 rounded-lg px-4 py-3 text-slate-200 outline-none transition-all text-left font-mono" 
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-400 mb-1 text-left">SAM Registration Status</label>
+                    <select
+                      value={samStatus}
+                      onChange={(e) => setSamStatus(e.target.value)}
+                      className="w-full bg-slate-950 border border-slate-800 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 rounded-lg px-4 py-3 text-slate-200 outline-none transition-all text-left"
+                    >
+                      <option value="unknown">Unknown</option>
+                      <option value="active">Active</option>
+                      <option value="expired">Expired</option>
+                      <option value="pending">Pending</option>
+                    </select>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-400 mb-1 text-left">Capabilities Statement Summary</label>
+                  <textarea 
+                    value={capabilitiesStatement} 
+                    onChange={(e) => setCapabilitiesStatement(e.target.value)} 
+                    placeholder="Summarize your company's core capabilities, past performance, and differentiators..."
+                    rows={4}
+                    className="w-full bg-slate-950 border border-slate-800 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 rounded-lg px-4 py-3 text-slate-200 outline-none transition-all text-left resize-none" 
+                  />
+                </div>
               </div>
             </div>
 
             <button 
               type="submit" 
               disabled={saving}
-              className="px-6 py-3 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-semibold rounded-lg transition-colors flex items-center gap-2"
+              className="px-6 py-3 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-semibold rounded-lg transition-colors flex items-center gap-2"
             >
               {saving && <Loader2 className="w-4 h-4 animate-spin" />}
               {saving ? 'Saving...' : 'Save Changes'}
@@ -262,25 +327,25 @@ export default function SettingsPage() {
         <div className="bg-slate-900/50 backdrop-blur-md border border-slate-800 rounded-xl p-8 flex flex-col gap-6 text-left">
           <div>
             <h2 className="text-2xl font-light text-white mb-2 flex items-center gap-2">
-              <Key className="w-6 h-6 text-emerald-400" />
+              <Key className="w-6 h-6 text-cyan-400" />
               API & Agent Keys
             </h2>
-            <p className="text-slate-450 text-sm">
+            <p className="text-slate-400 text-sm">
               Generate keys to allow third-party autonomous AI agents or local MCP servers to find opportunities and write proposals on your behalf.
             </p>
           </div>
 
           {newKeyToken && (
-            <div className="p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-lg text-emerald-400 text-sm space-y-2">
+            <div className="p-4 bg-cyan-500/10 border border-cyan-500/30 rounded-lg text-cyan-400 text-sm space-y-2">
               <span className="block font-medium">New Key Generated Successfully!</span>
               <span className="block text-xs text-slate-400">Copy this key now. For security, it will not be shown again.</span>
-              <div className="flex gap-2 items-center bg-slate-950 border border-slate-850 px-3 py-2.5 rounded-lg mt-2 font-mono text-xs select-all text-emerald-300">
+              <div className="flex gap-2 items-center bg-slate-950 border border-slate-850 px-3 py-2.5 rounded-lg mt-2 font-mono text-xs select-all text-cyan-300">
                 <span className="flex-1 break-all">{newKeyToken}</span>
                 <button 
                   onClick={handleCopyKey}
                   className="p-1 hover:bg-slate-900 border border-slate-800 rounded text-slate-400 hover:text-white transition-all shrink-0"
                 >
-                  {copiedKey ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                  {copiedKey ? <Check className="w-4 h-4 text-cyan-400" /> : <Copy className="w-4 h-4" />}
                 </button>
               </div>
             </div>
@@ -295,7 +360,7 @@ export default function SettingsPage() {
                 onChange={(e) => setKeyName(e.target.value)} 
                 placeholder="e.g., Cursor Agent, MCP Server" 
                 required
-                className="w-full bg-slate-950 border border-slate-800 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 rounded-lg px-3 py-2 text-slate-200 outline-none transition-all text-sm"
+                className="w-full bg-slate-950 border border-slate-800 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 rounded-lg px-3 py-2 text-slate-200 outline-none transition-all text-sm"
               />
             </div>
             <button 
@@ -310,7 +375,7 @@ export default function SettingsPage() {
             <h3 className="text-sm font-medium text-slate-350">Active API Keys</h3>
             {loadingKeys ? (
               <div className="flex justify-center py-4">
-                <Loader2 className="w-6 h-6 animate-spin text-emerald-500" />
+                <Loader2 className="w-6 h-6 animate-spin text-cyan-500" />
               </div>
             ) : apiKeys.length > 0 ? (
               <div className="divide-y divide-slate-850/50">
@@ -322,7 +387,7 @@ export default function SettingsPage() {
                         Prefix: {k.prefix}... • Created: {new Date(k.created_at).toLocaleDateString()}
                       </span>
                       {k.last_used_at && (
-                        <span className="block text-[10px] text-emerald-500 font-mono mt-0.5">
+                        <span className="block text-[10px] text-cyan-500 font-mono mt-0.5">
                           Last used: {new Date(k.last_used_at).toLocaleString()}
                         </span>
                       )}
