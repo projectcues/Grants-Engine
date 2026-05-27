@@ -7,6 +7,13 @@ import { createClient } from '@/utils/supabase/client';
 import Link from 'next/link';
 import { MarkdownRenderer } from '@/components/MarkdownRenderer';
 
+// Parse YYYY-MM-DD as local date (avoids UTC timezone shift that causes off-by-one day)
+const formatDeadlineDate = (dateStr: string | null) => {
+  if (!dateStr) return 'TBD';
+  const [y, m, d] = dateStr.split('-').map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString();
+};
+
 interface ActiveProject {
   id: string;
   title: string;
@@ -158,7 +165,9 @@ export default function Home() {
   };
 
   const calculateDaysLeft = (dateString: string) => {
-    const diff = new Date(dateString).getTime() - new Date().getTime();
+    const [y, m, d] = dateString.split('-').map(Number);
+    const deadline = new Date(y, m - 1, d);
+    const diff = deadline.getTime() - new Date().getTime();
     return Math.max(0, Math.ceil(diff / (1000 * 3600 * 24)));
   };
 
@@ -458,7 +467,7 @@ export default function Home() {
                 <div className="p-4 bg-slate-950 border border-slate-800 rounded-lg">
                   <span className="block text-xs text-slate-500 uppercase tracking-wider mb-1">Deadline Date</span>
                   <span className="text-lg font-semibold text-white">
-                    {new Date(selectedProject.deadline_date).toLocaleDateString()}
+                    {formatDeadlineDate(selectedProject.deadline_date)}
                   </span>
                 </div>
               </div>

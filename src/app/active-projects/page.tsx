@@ -6,6 +6,13 @@ import { createClient } from '@/utils/supabase/client';
 import { Loader2, X, ExternalLink, Sparkles, Award, Calendar } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
+// Parse YYYY-MM-DD as local date (avoids UTC timezone shift that causes off-by-one day)
+const formatDeadlineDate = (dateStr: string | null) => {
+  if (!dateStr) return 'TBD';
+  const [y, m, d] = dateStr.split('-').map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString();
+};
+
 interface ActiveProject {
   id: string;
   title: string;
@@ -150,7 +157,7 @@ export default function ActiveProjectsPage() {
                   <div className="border-t border-slate-900 pt-4 flex items-center justify-between text-xs text-slate-500">
                     <div className="flex items-center gap-1.5">
                       <Calendar className="w-4 h-4 text-slate-600" />
-                      <span>Deadline: {new Date(p.deadline_date).toLocaleDateString()}</span>
+                      <span>Deadline: {formatDeadlineDate(p.deadline_date)}</span>
                     </div>
                     <div className="flex items-center gap-1.5 text-emerald-400 font-semibold bg-emerald-500/10 px-2.5 py-1 rounded-full">
                       <Award className="w-3.5 h-3.5" />
@@ -195,7 +202,7 @@ export default function ActiveProjectsPage() {
                 <div className="p-4 bg-slate-950 border border-slate-800 rounded-lg">
                   <span className="block text-xs text-slate-500 uppercase tracking-wider mb-1">Deadline Date</span>
                   <span className="text-lg font-semibold text-white">
-                    {new Date(selectedProject.deadline_date).toLocaleDateString()}
+                    {formatDeadlineDate(selectedProject.deadline_date)}
                   </span>
                 </div>
               </div>
