@@ -60,7 +60,10 @@ export default function BestMatchesPage() {
     loadProjects();
   }, [supabase]);
 
-  const formatCurrency = (amount: any) => {
+  const formatCurrency = (amount: any, showZeroAsTbd = true) => {
+    if (amount === null || amount === undefined || (showZeroAsTbd && amount === 0)) {
+      return 'Funding TBD';
+    }
     const val = typeof amount === 'number' ? amount : Number(amount || 0);
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(val);
   };

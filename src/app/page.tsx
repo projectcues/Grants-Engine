@@ -149,7 +149,10 @@ export default function Home() {
     }
   };
 
-  const formatCurrency = (amount: any) => {
+  const formatCurrency = (amount: any, showZeroAsTbd = true) => {
+    if (amount === null || amount === undefined || (showZeroAsTbd && amount === 0)) {
+      return 'Funding TBD';
+    }
     const val = typeof amount === 'number' ? amount : Number(amount || 0);
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(val);
   };
@@ -359,7 +362,7 @@ export default function Home() {
           {/* Quick Stats Grid */}
           <div className="grid grid-cols-2 gap-6">
             <StatCard icon={<FileText />} label="Your Proposals" value={proposalCount.toString()} />
-            <StatCard icon={<Award />} label="Eligible Funds" value={formatCurrency(projects.reduce((acc, curr) => acc + (curr.amount || 0), 0))} />
+            <StatCard icon={<Award />} label="Eligible Funds" value={formatCurrency(projects.reduce((acc, curr) => acc + (curr.amount || 0), 0), false)} />
           </div>
         </div>
 
